@@ -17,7 +17,7 @@ def cast(params, dtype='float'):
 
 def conv_params(ni,no,k=1,g=1):
     assert ni % g == 0
-    return cast(torch.Tensor(no,ni/g,k,k).normal_(0,2/math.sqrt(ni*k*k)))
+    return cast(torch.Tensor(no,ni//g,k,k).normal_(0,2/math.sqrt(ni*k*k)))
 
 def linear_params(ni,no):
     return cast(dict(
@@ -26,7 +26,8 @@ def linear_params(ni,no):
 
 def bnparams(n):
     return cast(dict(
-        weight=torch.Tensor(n).uniform_(),
+#        weight=torch.Tensor(n).uniform_(),
+        weight=torch.ones(n),
         bias=torch.zeros(n)))
 
 def bnstats(n):
@@ -43,7 +44,7 @@ def data_parallel(f, input, params, stats, mode, device_ids, output_device=None)
 
     def replicate(param_dict, g):
         replicas = [{} for d in device_ids]
-        for k,v in param_dict.items():
+        for k,v in param_dict.iteritems():
             for i,u in enumerate(g(v)):
                 replicas[i][k] = u
         return replicas

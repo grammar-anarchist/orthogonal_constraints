@@ -56,7 +56,8 @@ def resnet(depth, width, num_classes):
         o1 = activation(x, params, stats, base + '.bn0', mode)
         y = F.conv2d(o1, params[base + '.conv0'], stride=stride, padding=1)
         o2 = activation(y, params, stats, base + '.bn1', mode)
-        z = F.conv2d(o2, params[base + '.conv1'], stride=1, padding=1)
+        o2d = F.dropout(o2, p=0.3, training=mode)
+        z = F.conv2d(o2d, params[base + '.conv1'], stride=1, padding=1)
         if base + '.convdim' in params:
             return z + F.conv2d(o1, params[base + '.convdim'], stride=stride)
         else:
