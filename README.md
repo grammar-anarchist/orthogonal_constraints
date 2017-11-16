@@ -12,7 +12,7 @@ Batch Normalization (BN) has proven to be an effective algorithm for deep neural
 ## Results
 See https://arxiv.org/abs/1709.09603 for details. Only the results for CIFAR-10 and 100 have been verified.
 
-# Requirements
+## Requirements
 
 The script depends on opencv python bindings, easily installable via conda:
 
