@@ -1,6 +1,6 @@
 # A PyTorch Implementation of "Riemannian approach to batch normalization"
 
-A PyTorch implementation of **Riemannian approach to batch normalization** (NIPS 2017) by Minhyung Cho and Jaehyung Lee (https://arxiv.org/abs/1709.09603).
+A PyTorch implementation of **Riemannian approach to batch normalization** (NIPS 2017) by Minhyung Cho and Jaehyung Lee (https://arxiv.org/abs/1709.09603). The poster for the conference can be found [here](https://rawgit.com/MinhyungCho/riemannian-batch-normalization/master/riemannian-batch-normalization-poster.pdf).
 
 
 Refer to https://github.com/MinhyungCho/riemannian-batch-normalization/ for a tensorflow implementation.
