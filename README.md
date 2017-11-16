@@ -10,8 +10,7 @@ Refer to https://github.com/MinhyungCho/riemannian-batch-normalization/ for a te
 Batch Normalization (BN) has proven to be an effective algorithm for deep neural network training by normalizing the input to each neuron and reducing the internal covariate shift. The space of weight vectors in the BN layer can be naturally interpreted as a Riemannian manifold, which is invariant to linear scaling of weights. Following the intrinsic geometry of this manifold provides a new learning rule that is more efficient and easier to analyze. We also propose intuitive and effective gradient clipping and regularization methods for the proposed algorithm by utilizing the geometry of the manifold. The resulting algorithm consistently outperforms the original BN on various types of network architectures and datasets.
 
 ## Results
-See https://arxiv.org/abs/1709.09603 for details.
-Only the results for CIFAR-10 and 100 have been verified. Please contact authors if you verify the result for SVHN.
+See https://arxiv.org/abs/1709.09603 for details. Only the results for CIFAR-10 and 100 have been verified.
 
 # Requirements
 
