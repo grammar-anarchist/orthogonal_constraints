@@ -1,5 +1,6 @@
 import math
 import torch
+import torch.nn as nn
 import torch.cuda.comm as comm
 from torch.nn.parallel._functions import Broadcast
 from torch.nn.parallel import scatter, parallel_apply, gather
@@ -16,8 +17,8 @@ def cast(params, dtype='float'):
         
 
 def conv_params(ni,no,k=1,g=1):
-    assert ni % g == 0
-    return cast(torch.Tensor(no,ni//g,k,k).normal_(0,2/math.sqrt(ni*k*k)))
+    assert ni % g == 0    
+    return cast(nn.init.orthogonal_(torch.Tensor(no,ni//g,k,k)))
 
 def linear_params(ni,no):
     return cast(dict(
@@ -72,3 +73,10 @@ def flatten_stats(stats):
     for keys, v in nested_dict(stats).iteritems_flat():
         flat_stats['.'.join(keys)] = v
     return flat_stats
+
+
+def matrix_norm_one(W):
+    out = torch.abs(W)
+    out = torch.sum(out, dim=0)
+    out = torch.max(out)
+    return out
