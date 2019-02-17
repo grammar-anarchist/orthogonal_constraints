@@ -12,7 +12,6 @@ from gutils import gpt
 from gutils import gpt2
 from gutils import Cayley_loop
 from gutils import qr_retraction
-from gutils import stiefel_parallel_translation
 from gutils import stiefel_proj_tan
 from utils import matrix_norm_one
 import random
