@@ -1,6 +1,6 @@
-# Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform
+# Optimization-on-Stiefel-Manifold-via-Cayley-Transform
 
-A PyTorch implementation of our ICML submission (NIPS 2017) "Efficient Riemannian Optimization on Stiefel Manifold via Cayley Transform".
+
 
 ## Abstract
 This paper is about Riemannian optimization on Stiefel manifold with an important application in enforcing orthonormality on parameters of a deep neural network. We specify an efficient way for estimating the retraction mapping --- i.e., mapping of the tangent vector back to the manifold --- the key challenge in Riemannian optimization due to its computational cost. Specifically, we estimate a smooth curve on Stiefel manifold that connects the previous and next update point in optimization using a novel iterative version of the Cayley transform. With this, we extended  conventional stochastic gradient descent (SGD) and ADAM methods to our two new algorithms Cayley SGD with momentum and Cayley ADAM. Convergence of Cayley SGD is theoretically analyzed, while convergence rates of both algorithms are evaluated in the context of training two standard deep  networks --- VGG and wide Resnet --- for image classification. Our results demonstrate that Cayley SGD  and  Cayley ADAM achieve faster convergence without decreasing classification accuracy of the networks, relative to the baseline SGD and ADAM, as well as existing approaches to enforcing orthogonality of network parameters.
@@ -43,7 +43,7 @@ CIFAR-100:
 ## To apply this algorithm to your model
 [stiefel_optimizer.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/stiefel_optimizer.py) is the main implementation which provides the proposed Cayley_SGD and Cayley_Adam optimizer. [main.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
 
-1. Collect all the weight parameters which need to be optimized on Stiefel manifold (and initialize them to a unit scale):
+1. Collect all the weight parameters which need to be optimized on Stiefel manifold:
 
     ```python
     key_g = []
