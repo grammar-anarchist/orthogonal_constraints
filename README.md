@@ -41,7 +41,7 @@ CIFAR-100:
 ```
 
 ## To apply this algorithm to your model
-[stiefel_optimizer.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/stiefel_optimizer.py) is the main implementation which provides the proposed Cayley_SGD and Cayley_Adam optimizer. [main.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
+[stiefel_optimizer.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/stiefel_optimizer.py) is the main implementation which provides the proposed Cayley_SGD and Cayley_Adam optimizer. [main.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
 
 1. Collect all the weight parameters which need to be optimized on Stiefel manifold:
 
