@@ -1,7 +1,5 @@
 import torch
 
-epsilon = 1e-6
-
 def norm(v, dim=1):
     assert len(v.size())==2
     return v.norm(p=2, dim=dim, keepdim=True)
