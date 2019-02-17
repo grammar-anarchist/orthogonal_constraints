@@ -2,10 +2,7 @@
     PyTorch training code for Wide Residual Networks:
     http://arxiv.org/abs/1605.07146
 
-    The code reproduces *exactly* it's lua version:
-    https://github.com/szagoruyko/wide-residual-networks
-
-    2016 Sergey Zagoruyko
+    2019 Jun Li
 """
 
 import argparse
@@ -26,9 +23,12 @@ from torchnet.engine import Engine
 from utils import cast, data_parallel
 import torch.backends.cudnn as cudnn
 from resnet import resnet
+from densenet import densenet3
+from vgg import vgg
 
 import grassmann_optimizer
-from gutils import unit
+import stiefel_optimizer
+from gutils import unit, qr_retraction
 
 cudnn.benchmark = True
 
@@ -38,7 +38,7 @@ parser.add_argument('--model', default='resnet', type=str)
 parser.add_argument('--depth', default=16, type=int)
 parser.add_argument('--width', default=1, type=float)
 parser.add_argument('--dataset', default='CIFAR10', type=str)
-parser.add_argument('--dataroot', default='.', type=str)
+parser.add_argument('--dataroot', default='/scratch/liju2/data/', type=str)
 parser.add_argument('--dtype', default='float', type=str)
 parser.add_argument('--groups', default=1, type=int)
 parser.add_argument('--nthread', default=4, type=int)
@@ -71,14 +71,19 @@ parser.add_argument('--gpu_id', default='0', type=str,
 
 def create_dataset(opt, mode):
     if opt.dataset == 'CIFAR10':
-      mean = [125.3, 123.0, 113.9]
-      std = [63.0, 62.1, 66.7]
+        mean = [125.3, 123.0, 113.9]
+        std = [63.0, 62.1, 66.7]
     elif opt.dataset =='CIFAR100':
-      mean = [129.3, 124.1, 112.4]
-      std = [68.2, 65.4, 70.4]
+        mean = [129.3, 124.1, 112.4]
+        std = [68.2, 65.4, 70.4]
+    elif opt.dataset =='SVHN':
+        opt.epoch_step = [60, 120]
+        opt.epochs = 160
+        mean = [129.3, 124.1, 112.4]
+        std = [68.2, 65.4, 70.4]
     else:
-      mean = [0, 0, 0]
-      std = [1.0, 1.0, 1.0]
+        mean = [0, 0, 0]
+        std = [1.0, 1.0, 1.0]
 
 
     convert = tnt.transform.compose([
@@ -106,7 +111,7 @@ def main():
     opt = parser.parse_args()
     print('parsed options:', vars(opt))
     epoch_step = json.loads(opt.epoch_step)
-    num_classes = 10 if opt.dataset == 'CIFAR10' else 100
+    num_classes = 100 if opt.dataset == 'CIFAR100' else 10
 
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu_id
     # to prevent opencv from initializing CUDA in workers
@@ -120,22 +125,32 @@ def main():
 
     train_loader = create_iterator(True)
     test_loader = create_iterator(False)
+    
+    if opt.model == 'resnet':
+        model = resnet
+    elif opt.model == 'vgg':
+        model = vgg
 
-    f, params, stats = resnet(opt.depth, opt.width, num_classes)
+    f, params, stats = model(opt.depth, opt.width, num_classes)
 
     key_g = []
-    if opt.optim_method == 'SGDG' or opt.optim_method == 'AdamG':
+    if opt.optim_method in ['SGDG', 'AdamG', 'Cayley_SGD', 'Cayley_Adam'] :
         param_g = []
         param_e0 = []
         param_e1 = []
 
         for key, value in params.items():
-            if 'conv' in key and value.size()[0] < np.prod(value.size()[1:]):
+            if 'conv' in key and value.size()[0] <= np.prod(value.size()[1:]):
                 param_g.append(value)
                 key_g.append(key)
-                # initlize to scale 1
-                unitp, _ = unit(value.data.view(value.size(0), -1)) 
-                value.data.copy_(unitp.view(value.size()))
+                if opt.optim_method in ['SGDG', 'AdamG']:
+                    # initlize to scale 1
+                    unitp, _ = unit(value.data.view(value.size(0), -1)) 
+                    value.data.copy_(unitp.view(value.size()))
+                elif opt.optim_method in ['Cayley_SGD', 'Cayley_Adam']:
+                    # initlize to orthogonal matrix
+                    q = qr_retraction(value.data.view(value.size(0), -1)) 
+                    value.data.copy_(q.view(value.size()))               
             elif 'bn' in key or 'bias' in key:
                 param_e0.append(value)
             else:
@@ -157,6 +172,18 @@ def main():
             dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'grassmann':False,'weight_decay':opt.bnDecay,'nesterov':True}
             dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'grassmann':False,'weight_decay':opt.weightDecay,'nesterov':True}
             return grassmann_optimizer.AdamG([dict_g, dict_e0, dict_e1])
+        
+        elif opt.optim_method == 'Cayley_SGD':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.SGDG([dict_g, dict_e0, dict_e1])
+        
+        elif opt.optim_method == 'Cayley_Adam':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.AdamG([dict_g, dict_e0, dict_e1])
 
     optimizer = create_optimizer(opt, opt.lr, opt.lrg)
 
@@ -165,7 +192,6 @@ def main():
         state_dict = torch.load(opt.resume)
         epoch = state_dict['epoch']
         params_tensors, stats = state_dict['params'], state_dict['stats']
-#        for k, v in params.iteritems():
         for k, v in list(params.items()):
             v.data.copy_(params_tensors[k])
         optimizer.load_state_dict(state_dict['optimizer'])
@@ -181,7 +207,6 @@ def main():
     for i, (key, v) in enumerate(stats.items()):
         print(str(i).ljust(5), key.ljust(kmax + 3), str(tuple(v.size())).ljust(23), torch.typename(v))
 
-#    n_parameters = sum(p.numel() for p in params.values() + stats.values())
     n_training_params = sum(p.numel() for p in params.values())
     n_parameters = sum(p.numel() for p in params.values()) + sum(p.numel() for p in stats.values())
     print('Total number of parameters:', n_parameters, '(%d)'%n_training_params)
@@ -201,7 +226,6 @@ def main():
         return F.cross_entropy(y, targets), y
 
     def log(t, state):
-#        torch.save(dict(params={k: v.data for k, v in params.iteritems()},
         torch.save(dict(params={k: v.data for k, v in list(params.items())},
                         stats=stats,
                         optimizer=state['optimizer'].state_dict(),
@@ -218,7 +242,7 @@ def main():
 
     def on_forward(state):
         classacc.add(state['output'].data, torch.LongTensor(state['sample'][1]))
-        meter_loss.add(state['loss'].data[0])
+        meter_loss.add(state['loss'].data.item())
 
     def on_start(state):
         state['epoch'] = epoch
@@ -235,12 +259,6 @@ def main():
             lr = opt.lr*pow(opt.lr_decay_ratio, power)
             lrg = opt.lrg*pow(opt.lr_decay_ratio, power)
             state['optimizer'] = create_optimizer(opt, lr, lrg)
-
-#            lr = state['optimizer'].param_groups[0]['lr']
-#            lrg = state['optimizer'].param_groups[0]['lrg']
-#            state['optimizer'] = create_optimizer(opt, 
-#                                          lr * opt.lr_decay_ratio, 
-#                                          lrg * opt.lr_decay_ratio)
 
     def on_end_epoch(state):
         train_loss = meter_loss.value()
