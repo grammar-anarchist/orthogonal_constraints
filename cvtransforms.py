@@ -157,4 +157,3 @@ class RandomSizedCrop(object):
         scale = Scale(self.size, interpolation=self.interpolation)
         crop = CenterCrop(self.size)
         return crop(scale(img))
-
