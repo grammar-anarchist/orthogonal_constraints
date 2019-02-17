@@ -10,7 +10,6 @@ from gutils import xTy
 from gutils import gexp
 from gutils import gpt
 from gutils import gpt2
-from gutils import Cayley_while
 from gutils import Cayley_loop
 from gutils import qr_retraction
 from gutils import stiefel_parallel_translation
