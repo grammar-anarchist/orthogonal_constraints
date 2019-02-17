@@ -1,16 +1,10 @@
-# A PyTorch Implementation of "Riemannian approach to batch normalization"
+# Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform
 
-A PyTorch implementation of **Riemannian approach to batch normalization** (NIPS 2017) by Minhyung Cho and Jaehyung Lee (https://arxiv.org/abs/1709.09603). The poster for the conference can be found [here](https://rawgit.com/MinhyungCho/riemannian-batch-normalization/master/riemannian-batch-normalization-poster.pdf).
-
-
-Refer to https://github.com/MinhyungCho/riemannian-batch-normalization/ for a tensorflow implementation.
-
+A PyTorch implementation of our ICML submission (NIPS 2017) "Efficient Riemannian Optimization on Stiefel Manifold via Cayley Transform".
 
 ## Abstract
-Batch Normalization (BN) has proven to be an effective algorithm for deep neural network training by normalizing the input to each neuron and reducing the internal covariate shift. The space of weight vectors in the BN layer can be naturally interpreted as a Riemannian manifold, which is invariant to linear scaling of weights. Following the intrinsic geometry of this manifold provides a new learning rule that is more efficient and easier to analyze. We also propose intuitive and effective gradient clipping and regularization methods for the proposed algorithm by utilizing the geometry of the manifold. The resulting algorithm consistently outperforms the original BN on various types of network architectures and datasets.
+This paper is about Riemannian optimization on Stiefel manifold with an important application in enforcing orthonormality on parameters of a deep neural network. We specify an efficient way for estimating the retraction mapping --- i.e., mapping of the tangent vector back to the manifold --- the key challenge in Riemannian optimization due to its computational cost. Specifically, we estimate a smooth curve on Stiefel manifold that connects the previous and next update point in optimization using a novel iterative version of the Cayley transform. With this, we extended  conventional stochastic gradient descent (SGD) and ADAM methods to our two new algorithms Cayley SGD with momentum and Cayley ADAM. Convergence of Cayley SGD is theoretically analyzed, while convergence rates of both algorithms are evaluated in the context of training two standard deep  networks --- VGG and wide Resnet --- for image classification. Our results demonstrate that Cayley SGD  and  Cayley ADAM achieve faster convergence without decreasing classification accuracy of the networks, relative to the baseline SGD and ADAM, as well as existing approaches to enforcing orthogonality of network parameters.
 
-## Results
-See https://arxiv.org/abs/1709.09603 for details. Only the results for CIFAR-10 and 100 have been verified.
 
 ## Requirements
 
@@ -31,35 +25,45 @@ The commands below are examples.
 
 CIFAR-10:
 ```
-[SGD] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10
-[SGD-G] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2
-[Adam-G] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05
+[SGD] python main.py --save ./logs/cifar10/SGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --gpu_id 0
+[SGD-G] python main.py --save ./logs/cifar10/SGDG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --gpu_id 0
+[Adam-G] python main.py --save ./logs/cifar10/AdamG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --gpu_id 0
+[Cayley-SGD] python main.py --save ./logs/cifar10/CayleySGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --gpu_id 0
+[Cayley-Adam] python main.py --save ./logs/cifar10/CayleyAdam/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --gpu_id 0
 ```
 CIFAR-100:
 ```
-[SGD] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10 --dataset CIFAR100
-[SGD-G] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --dataset CIFAR100
-[Adam-G] python main.py --save ./logs/resnet_$RANDOM$RANDOM --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --dataset CIFAR100
+[SGD] python main.py --save ./logs/cifar100/SGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --dataset CIFAR100 --gpu_id 0
+[SGD-G] python main.py --save ./logs/cifar100/SGDG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --dataset CIFAR100 --gpu_id 0
+[Adam-G] python main.py --save ./logs/cifar100/AdamG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --dataset CIFAR100 --gpu_id 0
+[Cayley-SGD] python main.py --save ./logs/cifar100/CayleySGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
+[Cayley-Adam] python main.py --save ./logs/cifar100/CayleyAdam/resnet/depth28width10/train$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
 ```
-## To apply this algorithm to your model
-[grassmann_optimizer.py](https://github.com/MinhyungCho/riemannian-batch-normalization-pytorch/blob/master/grassmann_optimizer.py) is the main implementation which provides the proposed SGD-G and Adam-G optimizer. [main.py](https://github.com/MinhyungCho/riemannian-batch-normalization-pytorch/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
 
-1. Collect all the weight parameters which need to be optimized on Grassmann manifold (and initialize them to a unit scale):
+## To apply this algorithm to your model
+[stiefel_optimizer.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/stiefel_optimizer.py) is the main implementation which provides the proposed Cayley_SGD and Cayley_Adam optimizer. [main.py](https://github.com/JunLi-Galios/Efficient-Riemannian-Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
+
+1. Collect all the weight parameters which need to be optimized on Stiefel manifold (and initialize them to a unit scale):
 
     ```python
     key_g = []
-    if opt.optim_method == 'SGDG' or opt.optim_method == 'AdamG':
+    if opt.optim_method in ['SGDG', 'AdamG', 'Carley_SGD', 'Carley_Adam'] :
         param_g = []
         param_e0 = []
         param_e1 = []
 
         for key, value in params.items():
-            if 'conv' in key and value.size()[0] < np.prod(value.size()[1:]):
+            if 'conv' in key and value.size()[0] <= np.prod(value.size()[1:]):
                 param_g.append(value)
                 key_g.append(key)
-                # initlize to scale 1
-                unitp, _ = unit(value.data.view(value.size(0), -1)) 
-                value.data.copy_(unitp.view(value.size()))
+                if opt.optim_method in ['SGDG', 'AdamG']:
+                    # initlize to scale 1
+                    unitp, _ = unit(value.data.view(value.size(0), -1)) 
+                    value.data.copy_(unitp.view(value.size()))
+                elif opt.optim_method == ['Carley_SGD', 'Carley_Adam']:
+                    # initlize to orthogonal matrix
+                    q = qr_retraction(value.data.view(value.size(0), -1)) 
+                    value.data.copy_(q.view(value.size()))               
             elif 'bn' in key or 'bias' in key:
                 param_e0.append(value)
             else:
@@ -69,9 +73,9 @@ CIFAR-100:
 
 2. Create the optimizer with proper parameters:
     ```python
-    import grassmann_optimizer
-    dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'grassmann':True, 'omega':opt.omega, 'grad_clip':opt.grad_clip}
-    dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'grassmann':False,'weight_decay':opt.bnDecay,'nesterov':True}
-    dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'grassmann':False,'weight_decay':opt.weightDecay,'nesterov':True}
-    return grassmann_optimizer.SGDG([dict_g, dict_e0, dict_e1])  # or use AdamG
+    import stiefel_optimizer
+    dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
+    dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+    dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+    return stiefel_optimizer.SGDG([dict_g, dict_e0, dict_e1])  # or use AdamG
     ```
