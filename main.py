@@ -76,11 +76,6 @@ def create_dataset(opt, mode):
     elif opt.dataset =='CIFAR100':
         mean = [129.3, 124.1, 112.4]
         std = [68.2, 65.4, 70.4]
-    elif opt.dataset =='SVHN':
-        opt.epoch_step = [60, 120]
-        opt.epochs = 160
-        mean = [129.3, 124.1, 112.4]
-        std = [68.2, 65.4, 70.4]
     else:
         mean = [0, 0, 0]
         std = [1.0, 1.0, 1.0]
