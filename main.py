@@ -23,7 +23,6 @@ from torchnet.engine import Engine
 from utils import cast, data_parallel
 import torch.backends.cudnn as cudnn
 from resnet import resnet
-from densenet import densenet3
 from vgg import vgg
 
 import grassmann_optimizer
