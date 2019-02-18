@@ -48,7 +48,7 @@ CIFAR-100:
     To train all the parameters in a model:
     ```python
     for param in model.parameters():
-        # initlize to orthogonal matrix
+        # initialize to orthogonal matrix
         q = qr_retraction(param.data.view(param.size(0), -1))
         if q.size()[0] < q.size()[1]:
             param.data.copy_(q.view(param.size()))
@@ -70,11 +70,11 @@ CIFAR-100:
                 param_g.append(value)
                 key_g.append(key)
                 if opt.optim_method in ['SGDG', 'AdamG']:
-                    # initlize to scale 1
+                    # initialize to scale 1
                     unitp, _ = unit(value.data.view(value.size(0), -1)) 
                     value.data.copy_(unitp.view(value.size()))
                 elif opt.optim_method == ['Carley_SGD', 'Carley_Adam']:
-                    # initlize to orthogonal matrix
+                    # initialize to orthogonal matrix
                     q = qr_retraction(value.data.view(value.size(0), -1)) 
                     value.data.copy_(q.view(value.size()))               
             elif 'bn' in key or 'bias' in key:
