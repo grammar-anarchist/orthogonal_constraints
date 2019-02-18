@@ -50,7 +50,7 @@ CIFAR-100:
     for param in model.parameters():
         param_g.append(param)
     ```
-    If you want to choose which weight parameters need to be optimized on Stiefel manifold, you need to calfully name each weight parameters as in [resnet.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/resnet.py). The following is an example that only optimizes the weight parameters in convolutional layers on Stiefel manifold and leave others for vanilla SGD.
+    If you want to choose which weight parameters need to be optimized on Stiefel manifold, you need to calfully name each weight parameters as in [resnet.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/resnet.py), and then put them into different groups. The following is an example that only optimizes the weight parameters in convolutional layers on Stiefel manifold and leave others for vanilla SGD.
 
     ```python
     key_g = []
