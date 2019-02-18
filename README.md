@@ -48,7 +48,13 @@ CIFAR-100:
     To train all the parameters in a model:
     ```python
     for param in model.parameters():
-        param_g.append(param)
+        if q.size()[0] < q.size()[1]:
+            # initlize to orthogonal matrix
+            q = qr_retraction(param.data.view(param.size(0), -1))
+            param.data.copy_(q.view(param.size()))
+            param_g.append(param)
+        else:
+            param_e0.append(param)
     ```
     If you want to choose which weight parameters need to be optimized on Stiefel manifold, you need to calfully name each weight parameters as in [resnet.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/resnet.py), and then put them into different groups. The following is an example that only optimizes the weight parameters in convolutional layers on Stiefel manifold and leave others for vanilla SGD.
 
