@@ -48,9 +48,9 @@ CIFAR-100:
     To train all the parameters in a model:
     ```python
     for param in model.parameters():
+        # initlize to orthogonal matrix
+        q = qr_retraction(param.data.view(param.size(0), -1))
         if q.size()[0] < q.size()[1]:
-            # initlize to orthogonal matrix
-            q = qr_retraction(param.data.view(param.size(0), -1))
             param.data.copy_(q.view(param.size()))
             param_g.append(param)
         else:
