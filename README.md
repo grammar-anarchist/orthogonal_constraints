@@ -25,25 +25,31 @@ The commands below are examples.
 
 CIFAR-10:
 ```
-[SGD] python main.py --save ./logs/cifar10/SGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --gpu_id 0
-[SGD-G] python main.py --save ./logs/cifar10/SGDG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --gpu_id 0
-[Adam-G] python main.py --save ./logs/cifar10/AdamG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --gpu_id 0
-[Cayley-SGD] python main.py --save ./logs/cifar10/CayleySGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --gpu_id 0
-[Cayley-Adam] python main.py --save ./logs/cifar10/CayleyAdam/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --gpu_id 0
+[SGD] python main.py --save ./logs/cifar10/resnet/depth28width10/SGD$RANDOM$RANDOM --model resnet --depth 28 --width 10 --gpu_id 0
+[SGD-G] python main.py --save ./logs/cifar10/resnet/depth28width10/SGDG$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --gpu_id 0
+[Adam-G] python main.py --save ./logs/cifar10/resnet/depth28width10/AdamG$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --gpu_id 0
+[Cayley-SGD] python main.py --save ./logs/cifar10/resnet/depth28width10/CayleySGD$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --gpu_id 0
+[Cayley-Adam] python main.py --save ./logs/cifar10/resnet/depth28width10/CayleyAdam$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --gpu_id 0
 ```
 CIFAR-100:
 ```
-[SGD] python main.py --save ./logs/cifar100/SGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --dataset CIFAR100 --gpu_id 0
-[SGD-G] python main.py --save ./logs/cifar100/SGDG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --dataset CIFAR100 --gpu_id 0
-[Adam-G] python main.py --save ./logs/cifar100/AdamG/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --dataset CIFAR100 --gpu_id 0
-[Cayley-SGD] python main.py --save ./logs/cifar100/CayleySGD/resnet/depth28width10/Stiefel$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
-[Cayley-Adam] python main.py --save ./logs/cifar100/CayleyAdam/resnet/depth28width10/train$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
+[SGD] python main.py --save ./logs/cifar100/resnet/depth28width10/SGD$RANDOM$RANDOM --model resnet --depth 28 --width 10 --dataset CIFAR100 --gpu_id 0
+[SGD-G] python main.py --save ./logs/cifar100/resnet/depth28width10/SGDG$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method SGDG --lr 0.01 --lrg 0.2 --dataset CIFAR100 --gpu_id 0
+[Adam-G] python main.py --save ./logs/cifar100/resnet/depth28width10/AdamG$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method AdamG --lr 0.01 --lrg 0.05 --dataset CIFAR100 --gpu_id 0
+[Cayley-SGD] python main.py --save ./logs/cifar100/resnet/depth28width10/CayleySGD$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_SGD --lr 0.01 --lrg 0.1 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
+[Cayley-Adam] python main.py --save ./logs/cifar100/resnet/depth28width10/CayleyAdam$RANDOM$RANDOM --model resnet --depth 28 --width 10 --optim_method Cayley_Adam --lr 0.01 --lrg 0.05 --lr_decay_ratio 0.2 --dataset CIFAR100 --gpu_id 0
 ```
 
 ## To apply this algorithm to your model
 [stiefel_optimizer.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/stiefel_optimizer.py) is the main implementation which provides the proposed Cayley_SGD and Cayley_Adam optimizer. [main.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/main.py) includes all the steps to apply the provided optimizers to your model.
 
 1. Collect all the weight parameters which need to be optimized on Stiefel manifold:
+    To train all the parameters in a model:
+    ```python
+    for param in model.parameters():
+        param_g.append(param)
+    ```
+    If you want to choose which weight parameters need to be optimized on Stiefel manifold, you need to calfully name each weight parameters as in [resnet.py](https://github.com/JunLi-Galios/Optimization-on-Stiefel-Manifold-via-Cayley-Transform/blob/master/resnet.py). The following is an example that only optimizes the weight parameters in convolutional layers on Stiefel manifold and leave others for vanilla SGD.
 
     ```python
     key_g = []
@@ -77,5 +83,5 @@ CIFAR-100:
     dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
     dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
     dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
-    return stiefel_optimizer.SGDG([dict_g, dict_e0, dict_e1])  # or use AdamG
+    return stiefel_optimizer.SGDG([dict_g, dict_e0, dict_e1])  # or use CayleyAdam
     ```
