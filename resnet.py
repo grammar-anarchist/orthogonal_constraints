@@ -81,3 +81,4 @@ def resnet(depth, width, num_classes):
         return o
 
     return f, flat_params, flat_stats
+ 
