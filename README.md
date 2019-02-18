@@ -83,7 +83,6 @@ CIFAR-100:
                 param_e1.append(value)
     ```
 
-
 2. Create the optimizer with proper parameters:
     ```python
     import stiefel_optimizer
