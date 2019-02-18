@@ -83,13 +83,18 @@ class SGDG(Optimizer):
         for group in self.param_groups:
             momentum = group['momentum']
             stiefel = group['stiefel']
+                           
+            for p in group['params']:
+                if p.grad is None:
+                    continue
 
-            if stiefel:                
-                for p in group['params']:
-                    if p.grad is None:
-                        continue
-
-                    unity,_ = unit(p.data.view(p.size()[0],-1))
+                unity,_ = unit(p.data.view(p.size()[0],-1))
+                if stiefel and unity.size()[0] <= unity.size()[1]:
+                    
+                    weight_decay = group['weight_decay']
+                    dampening = group['dampening']
+                    nesterov = group['nesterov']
+                    
                     rand_num = random.randint(1,21)
                     if rand_num==1:
                         unity = qr_retraction(unity)
@@ -119,14 +124,7 @@ class SGDG(Optimizer):
                     p.data.copy_(p_new.view(p.size()))
                     V.copy_(V_new)               
 
-            else:
-                # This routine is from https://github.com/pytorch/pytorch/blob/master/torch/optim/sgd.py
-                weight_decay = group['weight_decay']
-                dampening = group['dampening']
-                nesterov = group['nesterov']
-                for p in group['params']:
-                    if p.grad is None:
-                        continue
+                else:
                     d_p = p.grad.data
                     if weight_decay != 0:
                         d_p.add_(weight_decay, p.data)
@@ -209,17 +207,17 @@ class AdamG(Optimizer):
 
         for group in self.param_groups:
             stiefel = group['stiefel']
-
-            if stiefel:
+            
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+            
                 beta1 = group['momentum']
                 beta2 = group['beta2']
                 epsilon = group['epsilon']
 
-                for p in group['params']:
-                    if p.grad is None:
-                        continue
-
-                    unity,_ = unit(p.data.view(p.size()[0],-1))
+                unity,_ = unit(p.data.view(p.size()[0],-1))
+                if stiefel and unity.size()[0] <= unity.size()[1]:
                     rand_num = random.randint(1,21)
                     if rand_num==1:
                         unity = qr_retraction(unity)
@@ -251,10 +249,6 @@ class AdamG(Optimizer):
                     mnew_hat = mnew / (1 - beta1_power)
                     vnew_hat = vnew / (1 - beta2_power)
                     
-#                     P = torch.eye(m.size()[1]).cuda()-0.5*torch.matmul(unity.t(), unity) # n by n
-#                     Pf = torch.matmul(P, mnew_hat.t())
-#                     PfX = torch.matmul(Pf, unity)
-#                     W = (PfX - PfX.t())/ vnew_hat.add(epsilon).sqrt()
                     
                     M = mnew_hat.t()
                     U1 = torch.matmul(M, unity)
@@ -275,14 +269,12 @@ class AdamG(Optimizer):
 
                     param_state['beta1_power']*=beta1
                     param_state['beta2_power']*=beta2
-            else:
-                momentum = group['momentum']
-                weight_decay = group['weight_decay']
-                dampening = group['dampening']
-                nesterov = group['nesterov']
-                for p in group['params']:
-                    if p.grad is None:
-                        continue
+                    
+                else:
+                    momentum = group['momentum']
+                    weight_decay = group['weight_decay']
+                    dampening = group['dampening']
+                    nesterov = group['nesterov']
                     d_p = p.grad.data
                     if weight_decay != 0:
                         d_p.add_(weight_decay, p.data)
