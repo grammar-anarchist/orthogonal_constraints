@@ -30,11 +30,6 @@ class SGDG(Optimizer):
         If stiefel is False, the variables will be updated by SGD.
         This routine was taken from https://github.com/pytorch/pytorch/blob/master/torch/optim/sgd.py.
 
-        References:
-        TODO
-           - Minhyung Cho and Jaehyung Lee, Riemannian approach to batch normalization
-             (https://arxiv.org/abs/1709.09603)
-
     Args:
         params (iterable): iterable of parameters to optimize or dicts defining
             parameter groups
@@ -154,9 +149,6 @@ class AdamG(Optimizer):
         If grassmann is False, the variables will be updated by SGD.
         This routine was taken from https://github.com/pytorch/pytorch/blob/master/torch/optim/sgd.py.
 
-        References:
-           - Minhyung Cho and Jaehyung Lee, Riemannian approach to batch normalization
-             (https://arxiv.org/abs/1709.09603)
 
     Args:
         params (iterable): iterable of parameters to optimize or dicts defining
