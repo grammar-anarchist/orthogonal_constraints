@@ -111,7 +111,7 @@ class SGDG(Optimizer):
                     Pf = torch.matmul(P, V)
                     PfX = torch.matmul(Pf, unity)
                     W = PfX - PfX.t()
-                    t = 0.9 * 2 / (matrix_norm_one(W) + episilon)                    
+                    t = 0.5 * 2 / (matrix_norm_one(W) + episilon)                    
                     alpha = min(t, lr)
                     
                     p_new = Cayley_loop(unity.t(), W, V, alpha)
