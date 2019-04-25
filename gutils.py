@@ -72,6 +72,11 @@ def Cayley_loop(X, W, tan_vec, t): #
 
     return Y.t()
 
+def check_identity(X):#n-by-p
+    n,p = X.size()
+    res = torch.eye(p).cuda() - torch.mm(X.t(), X)
+    print('n={0}, p={1}, res norm={2}'.format(n, p ,torch.norm(res)))
+
 def stiefel_transport(y, g): # y,g p-by-n, p <= n, project g onto the tangent space of y      
     return stiefel_proj(y, g)
 
