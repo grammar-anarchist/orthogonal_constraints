@@ -11,7 +11,7 @@ This paper is about Riemannian optimization on Stiefel manifold with an importan
 The script depends on opencv python bindings, easily installable via conda:
 
 ```
-conda install -c menpo opencv3
+conda install -c conda-forge opencv 
 ```
 
 After that and after installing pytorch do:
