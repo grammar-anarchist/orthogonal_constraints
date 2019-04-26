@@ -1,4 +1,4 @@
-# Optimization-on-Stiefel-Manifold-via-Cayley-Transform
+# Optimization on Stiefel-Manifold via Cayley Transform
 
 
 
