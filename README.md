@@ -14,13 +14,13 @@ pip install -r requirements.txt
 
 ## Train
 
-Basic command:
+#### Basic command:
 
 ```
 python main.py --save ./PATH --model resnet --depth 34 --width 1 --gpu_id 0
 ```
 
-Methods and special parameters for them:
+#### Methods and special parameters for them:
 
 ```
 --optim_method Cayley_SGD
@@ -36,7 +36,7 @@ Methods and special parameters for them:
    --hh 16 gives constant number of Householder matrices, --hh_multiplier 0.5 gives a fraction depending on the maximum number of Householder matrices
     
 
-Other flags:
+#### Other flags:
 ```
 --dataset CIFAR10 
 ```
