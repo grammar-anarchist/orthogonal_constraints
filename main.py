@@ -43,6 +43,7 @@ parser.add_argument('--dataroot', default='./', type=str)
 parser.add_argument('--dtype', default='float', type=str)
 parser.add_argument('--groups', default=1, type=int)
 parser.add_argument('--nthread', default=4, type=int)
+parser.add_argument('--random_seed', default=None, type=int)
 
 # Training options
 parser.add_argument('--batchSize', default=128, type=int)
@@ -165,6 +166,8 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     train_loader, test_loader, num_classes = create_dataset(opt)
+    if opt.random_seed is not None:
+        torch.manual_seed(opt.random_seed)
     
     # model specific
     if opt.model == 'resnet':
