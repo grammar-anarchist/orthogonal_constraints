@@ -18,7 +18,7 @@ def cast(params, dtype='float'):
 
 def conv_params(ni,no,k=1,g=1):
     assert ni % g == 0    
-    return cast(nn.init.orthogonal_(torch.Tensor(no,ni//g,k,k)))
+    return cast(nn.init.orthogonal_(torch.Tensor(no,torch.div(ni,g,rounding_mode='trunc'),k,k)))
 
 def linear_params(ni,no):
     return cast(dict(
@@ -45,7 +45,7 @@ def data_parallel(f, input, params, stats, mode, device_ids, output_device=None)
 
     def replicate(param_dict, g):
         replicas = [{} for d in device_ids]
-        for k,v in param_dict.iteritems():
+        for k,v in param_dict.items():
             for i,u in enumerate(g(v)):
                 replicas[i][k] = u
         return replicas

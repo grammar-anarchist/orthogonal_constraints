@@ -1,4 +1,6 @@
+geotorch
 nested_dict
+sklearn
 tqdm
 torchvision
 torchnet

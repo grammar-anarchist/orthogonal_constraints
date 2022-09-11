@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 def norm(v, dim=1):
     assert len(v.size())==2
@@ -56,7 +57,7 @@ def polar_retraction(tan_vec): # tan_vec, p-by-n, p <= n
 def qr_retraction(tan_vec): # tan_vec, p-by-n, p <= n
     [p,n] = tan_vec.size()
     tan_vec.t_()
-    q,r = torch.qr(tan_vec)
+    q,r = torch.linalg.qr(tan_vec)
     d = torch.diag(r, 0)
     ph = d.sign()
     q *= ph.expand_as(q)
@@ -115,3 +116,83 @@ def gpt(y, h, normalize=False):
 
     [u, unorm] = unit(h)
     return (u*unorm.cos() - y*unorm.sin())*unorm
+
+
+@torch.jit.script
+def Householder_forward(U, H):
+        # H = (batch, input)
+        # U = (u, input)
+        curr = H
+        hist = torch.zeros((U.shape[0], H.size(0), H.size(1)), dtype=torch.float32).cuda()
+        for i in range(U.shape[0]):
+            u = U[i]
+            u_u = 2 / (torch.linalg.norm(u) ** 2)
+            alpha = u_u * (curr @ u) 
+            curr -= torch.outer(alpha, u)
+            hist[i] += curr
+
+        return curr, hist
+
+@torch.jit.script
+def Householder_backward(grad_output, hist, U):
+        curr = grad_output
+        grad_U = torch.zeros_like(U, dtype=torch.float32)
+        for i in range(U.shape[0] - 1, -1, -1):
+            h = hist[i]
+            u = U[i]
+            u_u = 2 / (torch.linalg.norm(u) ** 2)
+            alpha = u_u * (h @ u)
+            beta = u_u * (curr @ u)
+            grad_U[i] = torch.inner(alpha, beta) * u - alpha @ curr - beta @ h
+            if i > 0:
+                curr -= torch.outer(beta, u)
+
+        return grad_U
+
+def find_householders(X, hh_hum, sz):
+    # find first hh_num householder vectors for the matrix X
+    # X = (p, sz), sz >= p >= hh_num
+    U = torch.zeros(hh_hum, sz)
+    for i in range(hh_hum):
+        a = X[i, i:]
+        gamma = -a[0] / np.abs(a[0])
+        v = torch.clone(a)
+        v[0] -= gamma * torch.linalg.norm(a)
+        U[i, i:] = v
+        v_v = 2 / (torch.linalg.norm(v) ** 2)
+        alpha = v_v * (X[:, i:] @ v) 
+        X[:, i:] -= torch.outer(alpha, u)
+    return U
+'''
+
+@torch.jit.script
+def Householder_forward(U, H):
+        # H = (batch, input)
+        # U = (u, input)
+        curr = H
+        hist = torch.zeros((U.shape[0], H.size(0), H.size(1)), dtype=torch.float32).cuda()
+        for i in range(U.shape[0]):
+            u = U[i, i:]
+            u_u = 2 / (torch.linalg.norm(u) ** 2)
+            alpha = u_u * (curr[:, i:] @ u) 
+            curr[:, i:] -= torch.outer(alpha, u)
+            hist[i] += curr
+
+        return curr, hist
+
+@torch.jit.script
+def Householder_backward(grad_output, hist, U):
+        curr = grad_output
+        grad_U = torch.zeros_like(U, dtype=torch.float32)
+        for i in range(U.shape[0] - 1, -1, -1):
+            h = hist[i]
+            u = U[i, i:]
+            u_u = 2 / (torch.linalg.norm(u) ** 2)
+            alpha = u_u * (h[:, i:] @ u)
+            beta = u_u * (curr[:, i:] @ u)
+            grad_U[i, i:] = torch.inner(alpha, beta) * u - alpha @ curr[:, i:] - beta @ h[:, i:]
+            if i > 0:
+                curr[:, i:] -= torch.outer(beta, u)
+
+        return grad_U
+'''

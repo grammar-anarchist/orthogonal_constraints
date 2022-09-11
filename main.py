@@ -24,6 +24,8 @@ from utils import cast, data_parallel
 import torch.backends.cudnn as cudnn
 from resnet import resnet
 from vgg import vgg
+from sklearn.model_selection import train_test_split
+from torchvision import transforms
 
 import grassmann_optimizer
 import stiefel_optimizer
@@ -37,7 +39,7 @@ parser.add_argument('--model', default='resnet', type=str)
 parser.add_argument('--depth', default=16, type=int)
 parser.add_argument('--width', default=1, type=float)
 parser.add_argument('--dataset', default='CIFAR10', type=str)
-parser.add_argument('--dataroot', default='/scratch/liju2/data/', type=str)
+parser.add_argument('--dataroot', default='./', type=str)
 parser.add_argument('--dtype', default='float', type=str)
 parser.add_argument('--groups', default=1, type=int)
 parser.add_argument('--nthread', default=4, type=int)
@@ -56,8 +58,17 @@ parser.add_argument('--epoch_step', default='[60,120,160]', type=str,
                     help='json list with epochs to drop lr on')
 parser.add_argument('--lr_decay_ratio', default=0.2, type=float)
 parser.add_argument('--resume', default='', type=str)
-parser.add_argument('--optim_method', default='SGD', type=str)
+parser.add_argument('--optim_method', default='Cayley_SGD', type=str)
 parser.add_argument('--randomcrop_pad', default=4, type=float)
+parser.add_argument('--const', default=0.1, type=float)
+parser.add_argument('--low', default=0.05, type=float)
+parser.add_argument('--high', default=0.15, type=float)
+parser.add_argument('--hh', default=16, type=int)
+parser.add_argument('--hh_multiplier', default=-1.0, type=float)
+parser.add_argument('--hh_init', default='normal', type=str)
+parser.add_argument('--change_method_epoch', default=-1, type=int)
+parser.add_argument('--new_optim_method', default='Householder', type=str)
+parser.add_argument('--triv', default='expm', type=str)
 
 # Device options
 parser.add_argument('--cuda', action='store_true')
@@ -68,17 +79,13 @@ parser.add_argument('--ngpu', default=1, type=int,
 parser.add_argument('--gpu_id', default='0', type=str,
                     help='id(s) for CUDA_VISIBLE_DEVICES')
 
-def create_dataset(opt, mode):
+def create_dataset_CIFAR(opt, mode):
     if opt.dataset == 'CIFAR10':
         mean = [125.3, 123.0, 113.9]
         std = [63.0, 62.1, 66.7]
     elif opt.dataset =='CIFAR100':
         mean = [129.3, 124.1, 112.4]
         std = [68.2, 65.4, 70.4]
-    else:
-        mean = [0, 0, 0]
-        std = [1.0, 1.0, 1.0]
-
 
     convert = tnt.transform.compose([
         lambda x: x.astype(np.float32),
@@ -93,42 +100,83 @@ def create_dataset(opt, mode):
         T.RandomCrop(32),
         convert,
     ])
-
     ds = getattr(datasets, opt.dataset)(opt.dataroot, train=mode, download=True)
-    smode = 'train' if mode else 'test'
-    ds = tnt.dataset.TensorDataset([getattr(ds, smode + '_data'),
-                                    getattr(ds, smode + '_labels')])
+    ds = tnt.dataset.TensorDataset([getattr(ds, 'data'),
+                                    getattr(ds, 'targets')])
     return ds.transform({0: train_transform if mode else convert})
 
+def create_dataset_Caltech(opt):
+    if opt.dataset == 'Caltech256':
+        mean = [0.4915449, 0.48238277, 0.44663385]
+        std = [0.24713327, 0.24343619, 0.26151007]
+    def to_RGB(x):
+        if x.size(dim=0) == 1:
+            x = torch.squeeze(x)
+            return torch.stack([x,x,x],0)
+        return x
+    convert = tnt.transform.compose([
+        transforms.ToTensor(),
+        transforms.Resize((32, 32)),
+        lambda x: to_RGB(x),
+        transforms.Normalize(mean, std)
+    ])
+
+    train_transform = tnt.transform.compose([
+        transforms.RandomHorizontalFlip(),
+        transforms.Pad(4, padding_mode='reflect'),
+        transforms.RandomCrop(32)
+    ])
+    ds = getattr(datasets, opt.dataset)(opt.dataroot, download=True)
+    data = []
+    targets = []
+    for i in range(len(ds)):
+        image, target = ds[i]
+        image = convert(image)
+        data.append(image)
+        targets.append(target)
+    X_train, X_test, y_train, y_test = train_test_split(data, targets, test_size = 0.17, shuffle=True, random_state=32)
+    ds_train = tnt.dataset.TensorDataset([X_train, y_train])
+    ds_test = tnt.dataset.TensorDataset([X_test, y_test])
+    return ds_train.transform({0: train_transform}), ds_test
+
+def create_dataset(opt):
+    if opt.dataset == 'CIFAR10' or opt.dataset == 'CIFAR100':
+        ds_train = create_dataset_CIFAR(opt, True)
+        ds_test = create_dataset_CIFAR(opt, False)
+        num_classes = 10 if opt.dataset == 'CIFAR10' else 100
+
+    elif opt.dataset == 'Caltech256':
+        ds_train, ds_test = create_dataset_Caltech(opt)
+        num_classes = 257
+
+    train_loader = ds_train.parallel(batch_size=opt.batchSize, shuffle=True,
+                           num_workers=opt.nthread, pin_memory=True)
+    test_loader = ds_test.parallel(batch_size=opt.batchSize, shuffle=False,
+                           num_workers=opt.nthread, pin_memory=True)
+    return train_loader, test_loader, num_classes
 
 def main():
     opt = parser.parse_args()
     print('parsed options:', vars(opt))
     epoch_step = json.loads(opt.epoch_step)
-    num_classes = 100 if opt.dataset == 'CIFAR100' else 10
-
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu_id
-    # to prevent opencv from initializing CUDA in workers
+    # to prevent opencv from initializing CUDA in workers (???)
     torch.randn(8).cuda()
     os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-    def create_iterator(mode):
-        ds = create_dataset(opt, mode)
-        return ds.parallel(batch_size=opt.batchSize, shuffle=mode,
-                           num_workers=opt.nthread, pin_memory=True)
-
-    train_loader = create_iterator(True)
-    test_loader = create_iterator(False)
+    train_loader, test_loader, num_classes = create_dataset(opt)
     
+    # model specific
     if opt.model == 'resnet':
         model = resnet
     elif opt.model == 'vgg':
         model = vgg
-
     f, params, stats = model(opt.depth, opt.width, num_classes)
 
     key_g = []
-    if opt.optim_method in ['SGDG', 'AdamG', 'Cayley_SGD', 'Cayley_Adam'] :
+    if opt.optim_method in ['SGDG', 'AdamG', 'Cayley_SGD', 'Cayley_Adam', \
+                                'Simple_Cayley', 'Random_Cayley', \
+                                'Householder', 'Exponential'] :
         param_g = []
         param_e0 = []
         param_e1 = []
@@ -138,11 +186,9 @@ def main():
                 param_g.append(value)
                 key_g.append(key)
                 if opt.optim_method in ['SGDG', 'AdamG']:
-                    # initlize to scale 1
                     unitp, _ = unit(value.data.view(value.size(0), -1)) 
                     value.data.copy_(unitp.view(value.size()))
-                elif opt.optim_method in ['Cayley_SGD', 'Cayley_Adam']:
-                    # initlize to orthogonal matrix
+                elif opt.optim_method in ['Cayley_SGD', 'Cayley_Adam', 'Simple_Cayley', 'Random_Cayley']:
                     q = qr_retraction(value.data.view(value.size(0), -1)) 
                     value.data.copy_(q.view(value.size()))               
             elif 'bn' in key or 'bias' in key:
@@ -178,6 +224,31 @@ def main():
             dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
             dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
             return stiefel_optimizer.AdamG([dict_g, dict_e0, dict_e1])
+
+        elif opt.optim_method == 'Simple_Cayley':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True,'const':opt.const}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.SC([dict_g, dict_e0, dict_e1])
+        
+        elif opt.optim_method == 'Random_Cayley':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True,'low':opt.low,'high':opt.high}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.RC([dict_g, dict_e0, dict_e1])
+
+        elif opt.optim_method == 'Householder':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.Householder([dict_g, dict_e0, dict_e1], U_init=opt.hh_init, hh=opt.hh, hh_multiplier=opt.hh_multiplier)
+
+        elif opt.optim_method == 'Exponential':
+            dict_g = {'params':param_g,'lr':lrg,'momentum':0.9,'stiefel':True}
+            dict_e0 = {'params':param_e0,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.bnDecay,'nesterov':True}
+            dict_e1 = {'params':param_e1,'lr':lr,'momentum':0.9,'stiefel':False,'weight_decay':opt.weightDecay,'nesterov':True}
+            return stiefel_optimizer.Exponential([dict_g, dict_e0, dict_e1], triv=opt.triv)
+
 
     optimizer = create_optimizer(opt, opt.lr, opt.lrg)
 
@@ -216,7 +287,7 @@ def main():
     def h(sample):
         inputs = Variable(cast(sample[0], opt.dtype))
         targets = Variable(cast(sample[1], 'long'))
-        y = data_parallel(f, inputs, params, stats, sample[2], np.arange(opt.ngpu))
+        y = data_parallel(f, inputs, params, stats, sample[2], list(range(opt.ngpu)))
         return F.cross_entropy(y, targets), y
 
     def log(t, state):
@@ -248,11 +319,21 @@ def main():
         state['iterator'] = tqdm(train_loader)
 
         epoch = state['epoch'] + 1
-        if epoch in epoch_step:
+        if epoch == opt.change_method_epoch:
             power=sum(epoch>=i for i in epoch_step)
             lr = opt.lr*pow(opt.lr_decay_ratio, power)
             lrg = opt.lrg*pow(opt.lr_decay_ratio, power)
+            opt.optim_method = opt.new_optim_method
             state['optimizer'] = create_optimizer(opt, lr, lrg)
+        elif epoch in epoch_step:
+            power=sum(epoch>=i for i in epoch_step)
+            lr = opt.lr*pow(opt.lr_decay_ratio, power)
+            lrg = opt.lrg*pow(opt.lr_decay_ratio, power)
+            if opt.optim_method == 'Householder' or opt.optim_method == 'Exponential':
+                state['optimizer'] = state['optimizer'].reset(lr, lrg)
+            else:
+                state['optimizer'] = create_optimizer(opt, lr, lrg)
+
 
     def on_end_epoch(state):
         train_loss = meter_loss.value()
