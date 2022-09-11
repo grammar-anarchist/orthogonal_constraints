@@ -31,9 +31,9 @@ python main.py --save ./PATH --model resnet --depth 34 --width 1 --gpu_id 0
 ```
 --optim_method Random_Cayley --low 0.075 --high 0.125
 --optim_method Exponential --triv 'expm'/'cayley'
---optim_method Householder --hh_init 'normal'/'xavier' --hh 16
+--optim_method Householder --hh_init 'normal'/'xavier' --hh 16 / --hh_multiplier 0.5
 ```
-   --hh 16 gives constant number of Householder matrices, --hh_multiplier 0.5 gives a fraction depending on the maximum number of Householder matrices
+   hh gives constant number of Householder matrices, hh_multiplier gives a part depending on the maximum number of Householder matrices
     
 
 #### Other flags:
