@@ -33,7 +33,7 @@ python main.py --save ./PATH --model resnet --depth 34 --width 1 --gpu_id 0
 --optim_method Exponential --triv 'expm'/'cayley'
 --optim_method Householder --hh_init 'normal'/'xavier' --hh 16 / --hh_multiplier 0.5
 ```
-   hh gives constant number of Householder matrices, hh_multiplier gives a part depending on the maximum number of Householder matrices
+   hh gives constant number of Householder matrices, hh_multiplier gives a number which is (hh_multiplier * the maximum number of Householder matrices for this convolution block)
     
 
 #### Other flags:
