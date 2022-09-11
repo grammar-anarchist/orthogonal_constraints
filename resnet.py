@@ -3,10 +3,6 @@ import torch.nn.functional as F
 from utils import conv_params, linear_params, bnparams, bnstats, \
         flatten_params, flatten_stats
 
-def Stiefel(X):
-
-
-
 def resnet(depth, width, num_classes):
     assert (depth - 4) % 6 == 0, 'depth should be 6n+4'
     n = (depth - 4) // 6
